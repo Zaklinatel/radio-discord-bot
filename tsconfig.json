@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "outDir": "dist",
+    "allowSyntheticDefaultImports": true,
+    "noImplicitAny": false,
+    "module": "UMD",
+    "sourceMap": true,
+    "target": "ES6",
+    "allowJs": true,
+    "moduleResolution": "Node"
+  }
+}
