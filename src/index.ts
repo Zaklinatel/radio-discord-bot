@@ -107,8 +107,20 @@ async function onMessage(message: Message) {
         break;
 
       case 'list':
-        const list = player.getDiFmClient().getChannelList().map((name, n) => n + 1 + '. ' + name);
+        const list = player.getDiFmClient().getChannelList();
         await message.member.send('Hello! Here is a full list of channels:\n```\n' + list.join('\n') + '```');
+        break;
+
+      case 'help':
+        const help =
+`Command list:
+\`play [channel]\` - connect and play / resume. If channel passed, tries to find channel and tune in it. \`list\` to give list of channels.
+\`pause\` - pause
+\`stop\` - stop playing and disconnect bot
+\`list\` - list of channels
+\`help\` - this help
+`;
+        await message.member.send(help);
         break;
     }
   }
