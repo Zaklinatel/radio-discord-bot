@@ -1,12 +1,15 @@
 {
   "compilerOptions": {
+    "rootDir": "src",
     "outDir": "dist",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "target": "ES5",
+    "sourceMap": true,
+    "removeComments": true,
+    "alwaysStrict": true,
     "allowSyntheticDefaultImports": true,
     "noImplicitAny": false,
-    "module": "UMD",
-    "sourceMap": true,
-    "target": "ES6",
-    "allowJs": true,
-    "moduleResolution": "Node"
+    "allowJs": false
   }
 }
