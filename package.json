@@ -5,7 +5,8 @@
   "main": "dist/index.js",
   "scripts": {
     "start": "pm2 start --no-daemon",
-    "deploy": "pm2 deploy production"
+    "build": "tsc",
+    "start-prod": "npm run build; pm2 restart ecosystem.prod.config.js all"
   },
   "keywords": [
     "bot",
