@@ -26,7 +26,8 @@ export class Player {
         .then(() => {
           this._embedController.online = true;
           return this.tune(492);
-        });
+        })
+        .then(() => this)
   }
 
   getEmbedController(): EmbedController {

@@ -91,7 +91,7 @@ export class DiFmClient {
 
     const urlParser = new URL(url);
     options.headers = Object.assign(this._getHeaders(urlParser, options.method || 'GET'), options.headers);
-    options.headers.accept = options.api ? ACCEPT_HEADER_JSON : ACCEPT_HEADER_HTML;
+    options.headers['accept'] = options.api ? ACCEPT_HEADER_JSON : ACCEPT_HEADER_HTML;
 
     logger.log('Request:', options.method || 'GET', url);
 
