@@ -19,7 +19,8 @@ module.exports = {
       ref  : process.env.DEPLOY_BRANCH || 'origin/master',
       repo : process.env.DEPLOY_GIT || 'git@github.com:Zaklinatel/di.scord.git',
       path : process.env.DEPLOY_PATH,
-      'post-deploy' : 'ln -s ../shared/.env .; npm i --production; npm run start-prod'
+      'post-setup': 'touch ../shared/.env; ln -s ../shared/.env .',
+      'post-deploy' : 'npm i --production; npm run start-prod'
     }
   }
 };

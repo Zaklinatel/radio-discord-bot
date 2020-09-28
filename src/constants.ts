@@ -16,4 +16,4 @@ export const DEFAULT_HEADERS = {
 export const ACCEPT_HEADER_HTML = 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9';
 export const ACCEPT_HEADER_JSON = 'application/json, text/javascript, */*; q=0.01';
 
-export const DISCORD_CHANNEL_NAME = 'sabatone';
+export const DISCORD_CHANNEL_NAME = 'di-scord';
