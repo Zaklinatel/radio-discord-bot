@@ -13,6 +13,11 @@ export const DEFAULT_HEADERS = {
   'pragma': 'no-cache'
 };
 
+export const COLOR_DANGER = '#e91e28';
+export const COLOR_SUCCESS = '#52e44d';
+export const COLOR_INFO = '#59b2e0';
+export const COLOR_WARNING = '#e0cc3b';
+
 export const ACCEPT_HEADER_HTML = 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9';
 export const ACCEPT_HEADER_JSON = 'application/json, text/javascript, */*; q=0.01';
 

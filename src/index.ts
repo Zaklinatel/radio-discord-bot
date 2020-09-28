@@ -10,7 +10,7 @@ import {
 } from 'discord.js';
 import { DiFmClient } from './di-fm-client/di-fm-client';
 import { Logger } from './logger/logger';
-import { DISCORD_CHANNEL_NAME } from "./constants";
+import { COLOR_DANGER, COLOR_INFO, COLOR_WARNING, DISCORD_CHANNEL_NAME } from "./constants";
 import { EmbedController } from "./player/embed-controller";
 import { Player } from "./player/player";
 import { NoticeConfig } from "./notice-config.interface";
@@ -85,7 +85,7 @@ async function onMessage(message: Message) {
           if (channelId) {
             await player.tune(channelId);
           } else {
-            sendNotice(message.channel as TextChannel, `Can not find a channel related to "${search}" :C`);
+            sendNotice(message.channel as TextChannel, `Can not find a channel related to "${search}" :C`, { color: COLOR_DANGER });
           }
         }
 
@@ -93,7 +93,7 @@ async function onMessage(message: Message) {
           if (message.member.voice.channel) {
             await player.connect(message.member.voice.channel);
           } else {
-            sendNotice(message.channel as TextChannel, 'You need to join a voice channel first!');
+            sendNotice(message.channel as TextChannel, 'You need to join a voice channel first!', { color: COLOR_WARNING });
           }
         }
 
@@ -128,7 +128,7 @@ async function onMessage(message: Message) {
         break;
 
       default:
-        sendNotice(message.channel as TextChannel, 'Unknown command! Type `help` or `?` to see list of commands', { timeout: 10000 });
+        sendNotice(message.channel as TextChannel, 'Unknown command! Type `help` or `?` to see list of commands', { color: COLOR_DANGER, timeout: 10000 });
     }
   }
 }
@@ -229,7 +229,7 @@ async function createEmbedMessage(channel: TextChannel): Promise<Message> {
 function sendNotice(
     channel: TextChannel,
     text: string,
-    { timeout = 5000, color = '#59b2e0' }: Partial<NoticeConfig> = {}
+    { timeout = 5000, color = COLOR_INFO }: Partial<NoticeConfig> = {}
 ) {
   return channel
       .send({ embed: { color, description: text } })

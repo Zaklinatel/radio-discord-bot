@@ -2,6 +2,7 @@ import { Message, MessageEmbed } from 'discord.js';
 import { ITrack } from "../di-fm-client/track.interface";
 import { IChannel } from "../di-fm-client/channel.interace";
 import { Logger } from "../logger/logger";
+import { COLOR_DANGER, COLOR_INFO, COLOR_SUCCESS, COLOR_WARNING } from "../constants";
 
 const logger = new Logger('EmbedController');
 
@@ -55,10 +56,10 @@ export class EmbedController {
   }
 
   private _getColor() {
-    if (!this.online) return '#e91e28';
-    if (this.playing) return '#52e44d';
-    if (this.connected) return '#e0cc3b';
-    return '#59b2e0';
+    if (!this.online) return COLOR_DANGER;
+    if (this.playing) return COLOR_SUCCESS;
+    if (this.connected) return COLOR_WARNING;
+    return COLOR_INFO;
   }
 
   private _getStatus() {
