@@ -54,7 +54,7 @@ async function onGuildCreate(guild: Guild) {
 
 async function onReady() {
   discordLogger.log('Ready');
-  discordLogger.log('Guild / bot channel / embed:');
+  discordLogger.log('Initializing guilds');
 
   for (const guild of discord.guilds.cache.array()) {
     await initGuild(guild);
@@ -62,10 +62,11 @@ async function onReady() {
 }
 
 async function onMessage(message: Message) {
-  if (!message.guild) {
+  if (!message.guild || message.member.id === discord.user.id) {
     return;
   }
 
+  discordLogger.log(`Message in ${message.guild.name} from ${message.member.displayName}: ${message.content}`);
   const player = guildPlayers.get(message.guild.id) || await initGuild(message.guild);
 
   if (message.channel.id === player.getEmbedController().getMessage().channel.id) {
@@ -129,6 +130,10 @@ async function onMessage(message: Message) {
 async function onMessageReactionAdd(messageReaction: MessageReaction, user: User) {
   const message = messageReaction.message;
   const player = guildPlayers.get(message.guild.id);
+
+  if (user.id === discord.user.id) {
+    return;
+  }
 
   if (player.getEmbedController().getMessage().id === message.id) {
     if (messageReaction.emoji.name === '⏯') {
