@@ -13,6 +13,7 @@ import { Logger } from './logger/logger';
 import { DISCORD_CHANNEL_NAME } from "./constants";
 import { EmbedController } from "./player/embed-controller";
 import { Player } from "./player/player";
+import { NoticeConfig } from "./notice-config.interface";
 
 config();
 
@@ -108,21 +109,26 @@ async function onMessage(message: Message) {
         break;
 
       case 'list':
+      case 'l':
         const list = player.getDiFmClient().getChannelList();
         await message.member.send('Hello! Here is a full list of channels:\n```\n' + list.join('\n') + '```');
         break;
 
       case 'help':
+      case '?':
         const help =
-`Command list:
-\`play [channel]\` - connect and play / resume. If channel passed, tries to find channel and tune in it. \`list\` to give list of channels.
+`There is how you can control me 😉
+\`play [channel]\`, \`p [channel]\` - connect and play / resume. If channel passed, tries to find channel and tune in it. \`list\` to give list of channels.
 \`pause\` - pause
 \`stop\` - stop playing and disconnect bot
-\`list\` - list of channels
-\`help\` - this help
+\`list\`, \`l\` - list of channels
+\`help\`, \`?\` - this help
 `;
         await message.member.send(help);
         break;
+
+      default:
+        sendNotice(message.channel as TextChannel, 'Unknown command! Type `help` or `?` to see list of commands', { timeout: 10000 });
     }
   }
 }
@@ -215,14 +221,18 @@ async function createEmbedMessage(channel: TextChannel): Promise<Message> {
   const content = '\u200B\n**Controls:**\n⏯ Play / Pause\n🎲 Random channel!\n\u200B';
   const message = await channel.send({ embed: new MessageEmbed(), content });
   message.react('⏯');
-  message.react('🎲');
+  // message.react('🎲');
 
   return message;
 }
 
-function sendNotice(channel: TextChannel, text, timeout = 5000) {
+function sendNotice(
+    channel: TextChannel,
+    text: string,
+    { timeout = 5000, color = '#59b2e0' }: Partial<NoticeConfig> = {}
+) {
   return channel
-      .send({ embed: { color: '#59b2e0', description: text } })
+      .send({ embed: { color, description: text } })
       .then(msg => {
         setTimeout(() => msg.delete(), timeout);
       });
