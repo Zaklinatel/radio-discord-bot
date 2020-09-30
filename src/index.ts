@@ -17,7 +17,7 @@ import { NoticeConfig } from "./notice-config.interface";
 
 config();
 
-const CHANNEL_NAME = process.env.DISCORD_CHANNEL_NAME || 'di.scord';
+const CHANNEL_NAME = process.env.DISCORD_CHANNEL_NAME || 'di-scord';
 
 const mainLogger = new Logger('Main');
 const discordLogger = new Logger('Discord');
