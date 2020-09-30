@@ -68,13 +68,58 @@ export class DiFmClient {
   }
 
   findChannelId(searchString: string): number {
-    let channelCache = this._startConfig.channels.find(ch => searchString === ch.name);
+    let channel;
 
-    if (!channelCache) {
-      channelCache = this._startConfig.channels.find(ch => new RegExp(searchString, 'gi').test(ch.name));
+    if (/^\d+$/.test(searchString.trim())) {
+      /*
+       * If search string is a number, then search by position (not ID!).
+       */
+      const num = parseInt(searchString, 10);
+      if (num > 0) {
+        channel = this._startConfig.channels[num-1];
+      }
     }
 
-    return channelCache ? channelCache.id : null;
+    if (!channel) {
+      /*
+       * Search by full match
+       */
+      channel = this._startConfig.channels.find(ch => searchString.toLowerCase() === ch.name.toLowerCase());
+    }
+
+    if (!channel) {
+      /*
+       * Search by partial matching
+       */
+      channel = this._startConfig.channels.find(ch => new RegExp(searchString, 'gi').test(ch.name));
+    }
+
+    if (!channel) {
+      /*
+       * split search string by words and count a matches in channel name by each,
+       * then select a channel by highest match count (lower ids goes first).
+       */
+
+      const words = searchString.toLowerCase()
+          .split(' ')
+          .filter(word => /^[A-Za-z0-9]+$/gi.test(word));
+
+      channel = this._startConfig.channels
+          .map<{ id: number, matches: number }>(ch => ({
+            id: ch.id,
+            matches: words.reduce((sum, word) => sum + +ch.name.toLowerCase().includes(word), 0)
+          }))
+          .filter(result => result.matches)
+          .reduce((result, ch) => {
+            if (ch.matches > result.matches || ch.matches === result.matches && ch.id < result.id) {
+              return ch;
+            }
+
+            return result;
+          })
+    }
+
+    return channel ? channel.id : null;
   }
 
   getChannelList(): string[] {

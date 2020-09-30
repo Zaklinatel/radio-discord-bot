@@ -10,12 +10,14 @@ import {
 } from 'discord.js';
 import { DiFmClient } from './di-fm-client/di-fm-client';
 import { Logger } from './logger/logger';
-import { COLOR_DANGER, COLOR_INFO, COLOR_WARNING, DISCORD_CHANNEL_NAME } from "./constants";
+import { COLOR_DANGER, COLOR_INFO, COLOR_WARNING } from "./constants";
 import { EmbedController } from "./player/embed-controller";
 import { Player } from "./player/player";
 import { NoticeConfig } from "./notice-config.interface";
 
 config();
+
+const CHANNEL_NAME = process.env.DISCORD_CHANNEL_NAME || 'di.scord';
 
 const mainLogger = new Logger('Main');
 const discordLogger = new Logger('Discord');
@@ -67,10 +69,11 @@ async function onMessage(message: Message) {
     return;
   }
 
-  discordLogger.log(`Message in ${message.guild.name} from ${message.member.displayName}: ${message.content}`);
   const player = guildPlayers.get(message.guild.id) || await initGuild(message.guild);
 
   if (message.channel.id === player.getEmbedController().getMessage().channel.id) {
+    discordLogger.log(`Message in ${message.guild.name} from ${message.member.displayName}: ${message.content}`);
+
     const command = message.content.toLowerCase().split(' ');
     message.delete();
 
@@ -85,7 +88,7 @@ async function onMessage(message: Message) {
           if (channelId) {
             await player.tune(channelId);
           } else {
-            sendNotice(message.channel as TextChannel, `Can not find a channel related to "${search}" :C`, { color: COLOR_DANGER });
+            sendNotice(message.channel as TextChannel, `Can not find a channel matches with "${search}" :C`, { color: COLOR_INFO });
           }
         }
 
@@ -110,7 +113,7 @@ async function onMessage(message: Message) {
 
       case 'list':
       case 'l':
-        const list = player.getDiFmClient().getChannelList();
+        const list = player.getDiFmClient().getChannelList().map((ch, n) => `${n+1}. ${ch}`);
         await message.member.send('Hello! Here is a full list of channels:\n```\n' + list.join('\n') + '```');
         break;
 
@@ -118,11 +121,26 @@ async function onMessage(message: Message) {
       case '?':
         const help =
 `There is how you can control me 😉
-\`play [channel]\`, \`p [channel]\` - connect and play / resume. If channel passed, tries to find channel and tune in it. \`list\` to give list of channels.
-\`pause\` - pause
-\`stop\` - stop playing and disconnect bot
-\`list\`, \`l\` - list of channels
-\`help\`, \`?\` - this help
+\`reactions\` means you can execute this command by adding a reaction to bot message
+\`[DM]\` means bot will reply you in direct messages
+
+**play [channel], p [channel]**, ⏯
+Connect and play or resume playing selected channel.
+If \`channel\` passed, tries to find channel and tune in it. \`Channel\` may be case insensitive full name, part of name or number of channel.
+Send \`list\` to give list of channels.
+*Examples: \`play LoFi Lounge & Chillout\`, \`play 27\`, \`play lofi\`*
+
+**pause**, ⏯
+Pause ¯\\_(ツ)_/¯
+
+**stop**
+Stop playing and disconnect bot from channel
+
+**list, l**  \`[DM]\`
+Full list of channels
+
+**help, ?**  \`[DM]\`
+This help
 `;
         await message.member.send(help);
         break;
@@ -165,7 +183,7 @@ async function onMessageReactionAdd(messageReaction: MessageReaction, user: User
 }
 
 async function findBotChannel(guild: Guild): Promise<TextChannel> {
-  const ch = guild.channels.cache.find(c => c.name === DISCORD_CHANNEL_NAME && c.type === 'text' && c.manageable);
+  const ch = guild.channels.cache.find(c => c.name === CHANNEL_NAME && c.type === 'text' && c.manageable);
   if (ch) {
     return ch as TextChannel;
   } else {
@@ -209,7 +227,7 @@ async function initGuild(guild: Guild): Promise<Player> {
 function createBotChannel(guild: Guild): Promise<TextChannel> {
   discordLogger.log(`Create bot channel in ${guild.name}#${guild.id}`);
 
-  return guild.channels.create(DISCORD_CHANNEL_NAME, {
+  return guild.channels.create(CHANNEL_NAME, {
     type: 'text',
     topic: 'SabaTONE Bot channel'
   });

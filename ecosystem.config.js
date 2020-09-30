@@ -7,6 +7,8 @@ module.exports = {
     instances : 1,
     watch: 'src',
     log_file: 'logs/app.log',
+    error_file: 'logs/app-err.log',
+    out_file: 'logs/app-out.log',
     env: {
       NODE_ENV: "development",
     }
