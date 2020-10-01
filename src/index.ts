@@ -7,7 +7,7 @@ import {
   MessageEmbed,
   User,
   MessageReaction,
-  GuildMember
+  GuildMember, VoiceState
 } from 'discord.js';
 import { DiFmClient } from './di-fm-client';
 import { EmbedController, Player } from "./player";
@@ -40,6 +40,7 @@ async function start() {
   discord.on('ready', onReady);
   discord.on('message', onMessage);
   discord.on('messageReactionAdd', onMessageReactionAdd);
+  discord.on('voiceStateUpdate', onVoiceStateUpdate);
 
   setStatus();
 }
@@ -212,6 +213,19 @@ async function onMessageReactionAdd(messageReaction: MessageReaction, user: User
         player.play();
       }
     }
+  }
+}
+
+async function onVoiceStateUpdate(oldState: VoiceState, newState: VoiceState) {
+  const player: Player = guildPlayers.get(newState.guild.id);
+  if (!player || !player.connected()) {
+    return;
+  }
+
+  const connection = player.getConnection();
+  if (oldState.channelID === connection.channel.id && newState.channelID !== connection.channel.id && oldState.channel.members.size < 2) {
+    player.stop();
+    sendNotice(player.getEmbedController().getMessage().channel as TextChannel, 'Last listener leave from channel. Stop playing.', { color: COLOR_WARNING, timeout: 10000 });
   }
 }
 
