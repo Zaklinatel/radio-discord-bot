@@ -5,9 +5,7 @@ import {
   StreamDispatcher,
   Constants
 } from 'discord.js';
-import { DiFmClient } from "../di-fm-client/di-fm-client";
-import { ITrack } from "../di-fm-client/track.interface";
-import { IChannel } from "../di-fm-client/channel.interace";
+import { DiFmClient, IChannel, ITrack } from "../di-fm-client";
 import fetch from 'node-fetch';
 
 export class Player {

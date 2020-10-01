@@ -8,11 +8,10 @@ import {
   User,
   MessageReaction
 } from 'discord.js';
-import { DiFmClient } from './di-fm-client/di-fm-client';
+import { DiFmClient } from './di-fm-client';
+import { EmbedController, Player } from "./player";
 import { Logger } from './logger/logger';
 import { COLOR_DANGER, COLOR_INFO, COLOR_WARNING } from "./constants";
-import { EmbedController } from "./player/embed-controller";
-import { Player } from "./player/player";
 import { NoticeConfig } from "./notice-config.interface";
 
 config();

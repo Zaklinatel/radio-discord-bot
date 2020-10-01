@@ -1,37 +1,32 @@
 import fetch from 'node-fetch';
-
 import { ACCEPT_HEADER_HTML, ACCEPT_HEADER_JSON, DEFAULT_HEADERS, DI_FM_ADDRESS } from "../constants";
 import { IDiFmAppConfig } from "./di-fm-app-config.interface";
 import { IRoutine } from "./routine.interface";
 import { RequestOptionsInterface } from "./request-options.interface";
 import { Logger } from "../logger/logger";
 import { IChannel } from "./channel.interace";
+import { EventEmitter } from "events";
 
 const logger = new Logger('DI.FM');
 
-export class DiFmClient {
+export class DiFmClient extends EventEmitter {
   private _pageHTML: string;
   private _startConfig: IDiFmAppConfig;
   private _csrf: string;
 
-  private _eventListeners = {
-    login: [],
-    online: [],
-    offline: [],
-    error: []
-  };
-
-  constructor() { }
+  constructor() {
+    super();
+  }
 
   init() {
     return this._request('/', { api: false })
         .then(body => {
           this._pageHTML = body;
-          this._startConfig = JSON.parse(/di\.app\.start\(({.*})\);/.exec(this._pageHTML)[1]);
+          this._startConfig = Object.freeze(JSON.parse(/di\.app\.start\(({.*})\);/.exec(this._pageHTML)[1]));
           this._csrf = /<meta[^>]+name\s*=\s*"csrf-token" content="(.*?)"/.exec(this._pageHTML)[1];
 
           const result = { config: this._startConfig, csrf: this._csrf };
-          this._fireEvent('login',  result);
+          this.emit('login',  result);
 
           return result;
         });
@@ -51,20 +46,6 @@ export class DiFmClient {
 
   channel(channelId: number): Promise<IChannel> {
     return this._request('/channels/' + channelId)
-  }
-
-  on(name: string, listener: (...args: any) => void) {
-    const i = this._eventListeners[name].indexOf();
-    if (i === -1) {
-      this._eventListeners[name].push(listener);
-    }
-  }
-
-  off(name, listener: (...args: any) => void) {
-    const i = this._eventListeners[name].indexOf();
-    if (i !== -1) {
-      this._eventListeners[name].splice(i,1);
-    }
   }
 
   findChannelId(searchString: string): number {
@@ -145,9 +126,9 @@ export class DiFmClient {
           if (response.status === 200) {
             return options.api ? response.json() : response.text();
           } else {
-            logger.log('Request error ', response);
-            this._fireEvent('error', response);
-            return Promise.reject(response);
+            logger.log('Error response: ', response.status, response.statusText);
+            this.emit('error', response);
+            return this.init().then(() => this._request(path, options));
           }
         })
         .catch(reason => {
@@ -179,11 +160,5 @@ export class DiFmClient {
     if (this._startConfig) headers['x-session-key'] = this._startConfig.user.session_key;
 
     return headers;
-  }
-
-  private _fireEvent(name: string, ...args) {
-    for (const listener of this._eventListeners[name]) {
-      listener(...args);
-    }
   }
 }
