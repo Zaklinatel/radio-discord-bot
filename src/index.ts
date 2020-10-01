@@ -85,6 +85,11 @@ async function onMessage(message: Message) {
           const channelId = player.getDiFmClient().findChannelId(search);
 
           if (channelId) {
+            if (player.playing() && player.getChannel().id === channelId) {
+              sendNotice(message.channel as TextChannel, `Already playing this channel! 😎`, { color: COLOR_INFO });
+              break;
+            }
+
             await player.tune(channelId);
           } else {
             sendNotice(message.channel as TextChannel, `Can not find a channel matches with "${search}" :C`, { color: COLOR_INFO });

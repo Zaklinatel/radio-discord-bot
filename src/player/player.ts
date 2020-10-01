@@ -36,6 +36,10 @@ export class Player {
     return this._difmClient;
   }
 
+  getChannel(): IChannel {
+    return this._channel;
+  }
+
   connected() {
     return this._connection && this._connection.status === Constants.VoiceStatus.CONNECTED;
   }
