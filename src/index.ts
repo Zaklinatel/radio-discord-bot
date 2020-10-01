@@ -7,7 +7,7 @@ import {
   MessageEmbed,
   User,
   MessageReaction,
-  GuildMember, VoiceState
+  VoiceState
 } from 'discord.js';
 import { DiFmClient } from './di-fm-client';
 import { EmbedController, Player } from "./player";

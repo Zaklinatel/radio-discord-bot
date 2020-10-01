@@ -40,6 +40,16 @@ export class DiFmClient extends EventEmitter {
     return this._request('/ping', { root: true });
   }
 
+  listenHistoryChannel(channelId: number, trackId: number) {
+    return this._request(`/listen_history`, {
+      method: 'POST',
+      body: JSON.stringify({
+        track_id: trackId,
+        channel_id: channelId
+      })
+    });
+  }
+
   tuneIn(channelId: number): Promise<IRoutine> {
     return this._request(`/routines/channel/${channelId}?tune_in=true&audio_token=${this._startConfig.user.audio_token}`);
   }
