@@ -40,6 +40,10 @@ export class Player {
     return this._channel;
   }
 
+  getConnection(): VoiceConnection {
+    return this._connection
+  }
+
   connected() {
     return this._connection && this._connection.status === Constants.VoiceStatus.CONNECTED;
   }

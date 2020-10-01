@@ -6,7 +6,8 @@ import {
   Message,
   MessageEmbed,
   User,
-  MessageReaction
+  MessageReaction,
+  GuildMember
 } from 'discord.js';
 import { DiFmClient } from './di-fm-client';
 import { EmbedController, Player } from "./player";
@@ -56,6 +57,9 @@ async function onGuildCreate(guild: Guild) {
 
 async function onReady() {
   discordLogger.log('Ready');
+
+  discord.voice.connections.each(con => con.disconnect());
+
   discordLogger.log('Initializing guilds');
 
   for (const guild of discord.guilds.cache.array()) {
@@ -68,7 +72,7 @@ async function onMessage(message: Message) {
     return;
   }
 
-  const player = guildPlayers.get(message.guild.id) || await initGuild(message.guild);
+  const player: Player = guildPlayers.get(message.guild.id) || await initGuild(message.guild);
 
   if (message.channel.id === player.getEmbedController().getMessage().channel.id) {
     discordLogger.log(`Message in ${message.guild.name} from ${message.member.displayName}: ${message.content}`);
@@ -80,19 +84,24 @@ async function onMessage(message: Message) {
       case 'play':
         await player.onInit;
 
+        if (!canInvokeCommand(message.member.user, player)) {
+          sendNotice(message.channel as TextChannel, `You can not control the player while someone listening it!`, { color: COLOR_DANGER });
+          break;
+        }
+
         if (command.length > 1) {
           const search = command.slice(1).join(' ');
           const channelId = player.getDiFmClient().findChannelId(search);
 
           if (channelId) {
             if (player.playing() && player.getChannel().id === channelId) {
-              sendNotice(message.channel as TextChannel, `Already playing this channel! 😎`, { color: COLOR_INFO });
+              sendNotice(message.channel as TextChannel, `Already playing this channel! 😎`);
               break;
             }
 
             await player.tune(channelId);
           } else {
-            sendNotice(message.channel as TextChannel, `Can not find a channel matches with "${search}" :C`, { color: COLOR_INFO });
+            sendNotice(message.channel as TextChannel, `Can not find a channel matches with "${search}" :C`, { color: COLOR_DANGER });
           }
         }
 
@@ -108,10 +117,24 @@ async function onMessage(message: Message) {
         break;
 
       case 'pause':
+        await player.onInit;
+
+        if (!canInvokeCommand(message.member.user, player)) {
+          sendNotice(message.channel as TextChannel, `You can not control the player while someone listening it!`, { color: COLOR_DANGER });
+          break;
+        }
+
         player.pause();
         break;
 
       case 'stop':
+        await player.onInit;
+
+        if (!canInvokeCommand(message.member.user, player)) {
+          sendNotice(message.channel as TextChannel, `You can not control the player while someone listening it!`, { color: COLOR_DANGER });
+          break;
+        }
+
         player.stop();
         break;
 
@@ -164,6 +187,14 @@ async function onMessageReactionAdd(messageReaction: MessageReaction, user: User
   }
 
   if (player.getEmbedController().getMessage().id === message.id) {
+    messageReaction.users.remove(user.id);
+    await player.onInit;
+
+    if (!canInvokeCommand(user, player)) {
+      sendNotice(message.channel as TextChannel, `You can not control the player while someone listening it!`, { color: COLOR_DANGER });
+      return;
+    }
+
     if (messageReaction.emoji.name === '⏯') {
       if (player.playing()) {
         player.pause();
@@ -181,8 +212,19 @@ async function onMessageReactionAdd(messageReaction: MessageReaction, user: User
         player.play();
       }
     }
+  }
+}
 
-    messageReaction.users.remove(user.id);
+function canInvokeCommand(user: User, player: Player) {
+  const connection = player.getConnection();
+  const connected = player.connected();
+
+  if (connected) {
+    const empty = connection.channel.members.size < 2;
+    const hasMe = connection.channel.members.has(user.id);
+    return hasMe || empty;
+  } else {
+    return true;
   }
 }
 
