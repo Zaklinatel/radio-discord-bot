@@ -96,7 +96,7 @@ export class Player {
 
     if (!this._dispatcher || this._dispatcher.destroyed) {
       const track = await this.next();
-      this._difmClient.listenHistoryChannel(this._channel.id, track.id).then(console.log);
+      this._difmClient.listenHistoryChannel(this._channel.id, track.id);
       const file = await fetch('https:' + track.content.assets[0].url)
           .then(response => response.body);
 
