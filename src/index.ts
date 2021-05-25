@@ -297,7 +297,8 @@ async function createEmbedMessage(channel: TextChannel): Promise<Message> {
   discordLogger.log(`Create embed message in ${channel.guild.name}/${channel.name}`);
 
   const content = '\u200B\n**Controls:**\n⏯ Play / Pause\n🎲 Random channel!\n\u200B';
-  const message = await channel.send({ embed: new MessageEmbed(), content });
+  const embed = new MessageEmbed({ description: 'Loading...' });
+  const message = await channel.send({ embed, content });
   message.react('⏯');
   // message.react('🎲');
 
