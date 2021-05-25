@@ -18,17 +18,17 @@
   "author": "Sennov Ivan",
   "license": "ISC",
   "dependencies": {
-    "@discordjs/opus": "^0.3.2",
-    "discord.js": "^12.3.1",
-    "dotenv": "^8.2.0",
-    "ffmpeg-static": "^4.2.7",
+    "@discordjs/opus": "^0.3.3",
+    "@types/node": "^14.17.1",
+    "@types/node-fetch": "^2.5.10",
+    "discord.js": "^12.5.3",
+    "dotenv": "^8.6.0",
+    "ffmpeg-static": "^4.3.0",
     "node-fetch": "^2.6.1",
-    "pm2": "^4.4.1",
-    "sqlite3": "^5.0.0",
-    "ts-node": "^9.0.0",
-    "typescript": "^4.0.2",
-    "@types/node": "^14.11.2",
-    "@types/node-fetch": "^2.5.7"
+    "pm2": "^4.5.6",
+    "sqlite3": "^5.0.2",
+    "ts-node": "^9.1.1",
+    "typescript": "^4.2.4"
   },
   "devDependencies": {
     "tslint": "^6.1.3"
