@@ -128,7 +128,7 @@ export class DiFmClient extends EventEmitter {
     }
 
     const urlParser = new URL(url);
-    options.headers = Object.assign(this._getHeaders(urlParser, options.method || 'GET'), options.headers);
+    options.headers = Object.assign(this._getHeaders(urlParser, options.api), options.headers);
     options.headers['accept'] = options.api ? ACCEPT_HEADER_JSON : ACCEPT_HEADER_HTML;
 
     logger.log('Request:', options.method || 'GET', url);
@@ -161,14 +161,11 @@ export class DiFmClient extends EventEmitter {
     }
   }
 
-  private _getHeaders(url: URL, method = 'GET', json = false) {
-    const headers = Object.assign({}, DEFAULT_HEADERS, {
-      ':authority': url.host,
-      ':method': method.toUpperCase(),
-      ':path': url.pathname,
-      ':scheme': url.protocol.slice(0,-1),
+  private _getHeaders(url: URL, json = false) {
+    const headers = {
+      ...DEFAULT_HEADERS,
       'referer': url.origin
-    });
+    };
 
     if (json) {
       headers['accept'] = 'application/json, text/javascript, */*; q=0.01';

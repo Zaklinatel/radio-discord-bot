@@ -6,7 +6,7 @@
   "scripts": {
     "start": "pm2 start --no-daemon",
     "build": "tsc",
-    "start-prod": "npm run build; pm2 restart ecosystem.prod.config.js di.scord"
+    "start-prod": "npm run build; pm2 startOrRestart ecosystem.prod.config.js di.scord"
   },
   "keywords": [
     "bot",
