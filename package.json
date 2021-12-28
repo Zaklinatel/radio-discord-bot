@@ -6,7 +6,7 @@
   "scripts": {
     "start": "pm2 start --no-daemon",
     "build": "tsc",
-    "start-prod": "npm run build; pm2 restart ecosystem.prod.config.js all"
+    "start-prod": "npm run build; pm2 restart ecosystem.prod.config.js di.scord"
   },
   "keywords": [
     "bot",
@@ -25,8 +25,6 @@
     "dotenv": "^8.6.0",
     "ffmpeg-static": "^4.3.0",
     "node-fetch": "^2.6.1",
-    "pm2": "^4.5.6",
-    "sqlite3": "^5.0.2",
     "ts-node": "^9.1.1",
     "typescript": "^4.2.4"
   },

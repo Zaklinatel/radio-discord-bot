@@ -7,7 +7,7 @@ import { Logger } from "../logger/logger";
 import { IChannel } from "./channel.interace";
 import { EventEmitter } from "events";
 
-const logger = new Logger('DI.FM');
+const logger = new Logger('DI.FM Client');
 
 export class DiFmClient extends EventEmitter {
   private _pageHTML: string;
@@ -24,6 +24,8 @@ export class DiFmClient extends EventEmitter {
           this._pageHTML = body;
           this._startConfig = Object.freeze(JSON.parse(/di\.app\.start\(({.*})\);/.exec(this._pageHTML)[1]));
           this._csrf = /<meta[^>]+name\s*=\s*"csrf-token" content="(.*?)"/.exec(this._pageHTML)[1];
+
+          logger.log(`Initialized: ${this._startConfig.user.session_key}, ${this._csrf}`);
 
           const result = { config: this._startConfig, csrf: this._csrf };
           this.emit('login',  result);
@@ -133,8 +135,12 @@ export class DiFmClient extends EventEmitter {
 
     return fetch(url, options)
         .then(response => {
-          if (response.status === 200) {
-            return options.api ? response.json() : response.text();
+          if (response.status >= 200 && response.status < 400) {
+            return options.api
+                ? response
+                    .json()
+                    .catch(() => Promise.resolve(''))
+                : response.text();
           } else {
             logger.log('Error response: ', response.status, response.statusText);
             this.emit('error', response);
@@ -148,23 +154,26 @@ export class DiFmClient extends EventEmitter {
   }
 
   private _getBaseUrl(api = true, root = false) {
-    let url = DI_FM_ADDRESS;
-
     if (api) {
-      url += root ? this._startConfig.api.urlRoot : this._startConfig.api.url
+      return root ? this._startConfig.api.urlRoot : this._startConfig.api.url
+    } else {
+      return DI_FM_ADDRESS;
     }
-
-    return url;
   }
 
-  private _getHeaders(url: URL, method = 'GET') {
+  private _getHeaders(url: URL, method = 'GET', json = false) {
     const headers = Object.assign({}, DEFAULT_HEADERS, {
-      // ':authority': url.host,
-      // ':method': method.toUpperCase(),
-      // ':path': url.pathname,
-      // ':scheme': url.protocol.slice(0,-1),
+      ':authority': url.host,
+      ':method': method.toUpperCase(),
+      ':path': url.pathname,
+      ':scheme': url.protocol.slice(0,-1),
       'referer': url.origin
     });
+
+    if (json) {
+      headers['accept'] = 'application/json, text/javascript, */*; q=0.01';
+      headers['content-type'] = 'application/json';
+    }
 
     if (this._csrf) headers['x-csrf-token'] = this._csrf;
     if (this._startConfig) headers['x-session-key'] = this._startConfig.user.session_key;
