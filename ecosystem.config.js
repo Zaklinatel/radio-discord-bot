@@ -10,8 +10,8 @@ module.exports = {
     error_file: 'logs/app-err.log',
     out_file: 'logs/app-out.log',
     env: {
-      NODE_ENV: "development",
-    }
+      NODE_ENV: 'development',
+    },
   }],
 
   deploy : {
@@ -22,7 +22,7 @@ module.exports = {
       repo : process.env.DEPLOY_GIT || 'git@github.com:Zaklinatel/di.scord.git',
       path : process.env.DEPLOY_PATH,
       'post-setup': 'touch ../shared/.env; ln -s ../shared/.env .',
-      'post-deploy' : 'npm i --production; npm run start-prod'
-    }
-  }
+      'post-deploy' : 'npm i --production; npm run start-prod',
+    },
+  },
 };

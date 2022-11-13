@@ -1,12 +1,13 @@
 {
   "name": "di.scord",
-  "version": "1.0.0",
-  "description": "Bot for streaming a music from DI.FM stations",
-  "main": "dist/index.js",
+  "version": "1.1.0",
+  "description": "Bot for streaming a music from several internet-radio stations",
+  "main": "src/index.ts",
   "scripts": {
     "start": "pm2 start --no-daemon",
     "build": "tsc",
-    "start-prod": "npm run build; pm2 startOrRestart ecosystem.prod.config.js di.scord"
+    "start-prod": "npm run build; pm2 startOrRestart ecosystem.prod.config.js di.scord",
+    "ts-node": "ts-node"
   },
   "keywords": [
     "bot",
@@ -16,19 +17,23 @@
     "radio"
   ],
   "author": "Sennov Ivan",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
-    "@discordjs/opus": "^0.3.3",
-    "@types/node": "^14.17.1",
-    "@types/node-fetch": "^2.5.10",
-    "discord.js": "^12.5.3",
-    "dotenv": "^8.6.0",
-    "ffmpeg-static": "^4.3.0",
-    "node-fetch": "^2.6.1",
-    "ts-node": "^9.1.1",
-    "typescript": "^4.2.4"
+    "@discordjs/opus": "^0.9.0",
+    "@discordjs/voice": "^0.13.0",
+    "@types/node": "^18.11.9",
+    "@types/node-fetch": "^2.6.2",
+    "discord.js": "^14.6.0",
+    "dotenv": "^16.0.3",
+    "ffmpeg-static": "^5.1.0",
+    "libsodium-wrappers": "^0.7.10",
+    "node-fetch": "^2.6.7",
+    "ts-node": "^10.9.1",
+    "typescript": "^4.8.4"
   },
   "devDependencies": {
-    "tslint": "^6.1.3"
+    "@typescript-eslint/eslint-plugin": "^5.42.1",
+    "@typescript-eslint/parser": "^5.42.1",
+    "eslint": "^8.27.0"
   }
 }
