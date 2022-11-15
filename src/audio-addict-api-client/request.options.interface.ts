@@ -7,5 +7,6 @@ export interface QueryParameters {
 
 export interface IRequestOptions extends RequestInit {
   root: boolean;
+  retries: number;
   queryParams: QueryParameters;
 }

@@ -1,5 +1,5 @@
 import fetch, { HeadersInit, RequestInit, Response } from 'node-fetch';
-import { DEFAULT_HTML_HEADERS, DEFAULT_JSON_HEADERS } from '../constants';
+import { API_REQUEST_RETRIES, DEFAULT_HTML_HEADERS, DEFAULT_JSON_HEADERS } from '../constants';
 import { IAppConfig } from './app-config.interface';
 import { IRoutine } from './routine.interface';
 import { IRequestOptions } from './request.options.interface';
@@ -18,7 +18,7 @@ export class AudioAddictNetwork {
   private readonly _logger;
 
   constructor(public readonly websiteUrl: string) {
-    this._logger = new Logger(`${websiteUrl} Network `);
+    this._logger = new Logger(`Network ${websiteUrl}`);
   }
 
   async updateCredentials(): Promise<IAppConfig> {
@@ -56,6 +56,7 @@ export class AudioAddictNetwork {
     }
 
     this._networkId = thisNetwork.id;
+    this._logger.log(`Initialized`);
 
     return this._appConfig;
   }
@@ -191,7 +192,7 @@ export class AudioAddictNetwork {
   }
 
   private async _apiRequest<T extends object>(path, options: Partial<IRequestOptions> = {}): Promise<T> {
-    const opt = { root: false, ...options };
+    const opt = { root: false, retries: API_REQUEST_RETRIES, ...options };
 
     let url = this._getBaseUrl(opt.root) + path;
     if (opt.queryParams) {
@@ -220,7 +221,7 @@ export class AudioAddictNetwork {
     return this._request(url, options).then(r => r.text());
   }
 
-  private async _request(url: string, options: RequestInit): Promise<Response> {
+  private async _request(url: string, options: RequestInit, retries = API_REQUEST_RETRIES): Promise<Response> {
     const opt: RequestInit = { method: 'GET', ...options };
     let response: Response;
 
@@ -243,6 +244,13 @@ export class AudioAddictNetwork {
     } else {
       const msg = `Error response ${response.status} ${response.statusText}`;
       this._logger.log(msg);
+
+      if (response.status === 401 && retries > 0) {
+        this._logger.log(`Update credentials and retry... Retries: ${retries}`);
+        await this.updateCredentials();
+        return this._request(url, options, --retries);
+      }
+
       throw new Error(msg);
     }
   }

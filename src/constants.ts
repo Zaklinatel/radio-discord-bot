@@ -36,8 +36,7 @@ export const DEFAULT_JSON_HEADERS = {
   'sec-fetch-site': 'cross-site',
 };
 
-export const ACCEPT_HEADER_HTML = 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9';
-export const ACCEPT_HEADER_JSON = 'application/json, text/javascript, */*; q=0.01';
+export const API_REQUEST_RETRIES = 3;
 
 export const COLOR_DANGER: HexColorString = '#e91e28';
 export const COLOR_SUCCESS: HexColorString = '#52e44d';
