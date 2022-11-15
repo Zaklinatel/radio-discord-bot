@@ -5,15 +5,21 @@ import { IRoutine } from './routine.interface';
 import { IRequestOptions } from './request.options.interface';
 import { Logger } from '../logger/logger';
 import { IChannel } from './channel.interace';
-
-const logger = new Logger('DI.FM Client');
+import { IPlaylistSearchResult } from './playlist-search-result.interface';
+import { IPlaylistSearchParameters } from './playlist-search-parameters.interface';
+import { ITrack } from './track.interface';
+import { fillUrlParametersObject } from '../helpers';
+import { IPlaylistProgress } from './playlist-progress.interface';
 
 export class AudioAddictNetwork {
   private _appConfig?: IAppConfig;
   private _csrfToken?: string;
   private _networkId?: number;
+  private readonly _logger;
 
-  constructor(public readonly websiteUrl: string) {}
+  constructor(public readonly websiteUrl: string) {
+    this._logger = new Logger(`${websiteUrl} Network `);
+  }
 
   async updateCredentials(): Promise<IAppConfig> {
     const body = await this._htmlRequest(this.websiteUrl);
@@ -84,6 +90,16 @@ export class AudioAddictNetwork {
     });
   }
 
+  listenHistoryPlaylist(playlistId: number, trackId: number) {
+    return this._apiRequest(`/listen_history`, {
+      method: 'POST',
+      body: JSON.stringify({
+        track_id: trackId,
+        playlist_id: playlistId,
+      }),
+    });
+  }
+
   tuneIn(channelId: number): Promise<IRoutine> | undefined {
     const config = this._appConfig;
     if (config) {
@@ -93,6 +109,26 @@ export class AudioAddictNetwork {
 
   channel(channelId: number): Promise<IChannel> {
     return this._apiRequest('/channels/' + channelId);
+  }
+
+  playlists({ page, perPage, facets }: IPlaylistSearchParameters): Promise<IPlaylistSearchResult> {
+    return this._apiRequest(`/search/playlists`, {
+      queryParams: {
+        page,
+        per_page: perPage,
+        facets: {
+          tag_name: facets,
+        },
+      },
+    });
+  }
+
+  playlist(playlistId: number): Promise<ITrack[]> {
+    return this._apiRequest(`/playlist_collections/${playlistId}`);
+  }
+
+  play(playlistId: number): Promise<IPlaylistProgress> {
+    return this._apiRequest(`/playlists/${playlistId}/play`);
   }
 
   findChannelId(searchString: string): number | undefined {
@@ -155,11 +191,11 @@ export class AudioAddictNetwork {
   }
 
   private async _apiRequest<T extends object>(path, options: Partial<IRequestOptions> = {}): Promise<T> {
-    const opt = { root: false, headers: {}, ...options };
+    const opt = { root: false, ...options };
 
     let url = this._getBaseUrl(opt.root) + path;
     if (opt.queryParams) {
-      url += '?' + new URLSearchParams(opt.queryParams).toString();
+      url += `?${fillUrlParametersObject(opt.queryParams)}`;
     }
 
     opt.headers = {
@@ -167,6 +203,7 @@ export class AudioAddictNetwork {
       'referer': this.websiteUrl,
       'x-csrf-token': this._csrfToken,
       'x-session-key': this.getConfig().user.session_key,
+      ...opt.headers,
     } as HeadersInit;
 
     return this._request(url, opt).then(r => r.json());
@@ -187,14 +224,14 @@ export class AudioAddictNetwork {
     const opt: RequestInit = { method: 'GET', ...options };
     let response: Response;
 
-    logger.log(`Request: ${opt.method} ${url}`);
+    this._logger.log(`Request: ${opt.method} ${url}`);
 
     try {
       response = await fetch(url, opt);
     } catch (error) {
       if (error instanceof Error) {
         const msg = `Request error: ${error.message}`;
-        logger.log(msg);
+        this._logger.log(msg);
         throw new Error(msg);
       }
 
@@ -205,7 +242,7 @@ export class AudioAddictNetwork {
       return response;
     } else {
       const msg = `Error response ${response.status} ${response.statusText}`;
-      logger.log(msg);
+      this._logger.log(msg);
       throw new Error(msg);
     }
   }

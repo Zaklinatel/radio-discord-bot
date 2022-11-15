@@ -1,7 +1,11 @@
 import { RequestInit } from 'node-fetch';
 
+type QueryParam = string | string[] | number | number[] | QueryParameters;
+export interface QueryParameters {
+  [p: string]: QueryParam
+}
+
 export interface IRequestOptions extends RequestInit {
-  api: boolean;
   root: boolean;
-  queryParams: Record<string, string>;
+  queryParams: QueryParameters;
 }
