@@ -1,6 +1,6 @@
 import { Readable } from 'node:stream';
 import { StageChannel, VoiceChannel } from 'discord.js';
-import { IChannel, ITrack, RadioApiClient } from '../radio-api-client';
+import { IChannel, ITrack, AudioAddictNetwork } from '../audio-addict-api-client';
 import { getHttpFileStream } from '../helpers';
 import { MessageController } from '../message-controller';
 import {
@@ -26,20 +26,17 @@ export class MusicPlayer {
 
   constructor(
       private readonly _embedController: MessageController,
-      private readonly _difmClient: RadioApiClient,
+      private readonly _difmClient: AudioAddictNetwork,
   ) {
-    this.onInit = _difmClient.init()
-        .then(() => {
-          return this.tune(1, 492);
-        })
-        .then(() => this);
+    this.onInit = this.tune(492)
+      .then(() => this);
   }
 
   getMessageController(): MessageController {
     return this._embedController;
   }
 
-  getDiFmClient(): RadioApiClient {
+  getDiFmClient(): AudioAddictNetwork {
     return this._difmClient;
   }
 
@@ -95,8 +92,8 @@ export class MusicPlayer {
     return this._connection;
   }
 
-  async tune(networkId: number, channelId: number): Promise<IChannel> {
-    this._channel = await this._difmClient.channel(networkId, channelId);
+  async tune(channelId: number): Promise<IChannel> {
+    this._channel = await this._difmClient.channel(channelId);
     await this.refreshPlaylist();
 
     if (this.isPlaying()) {
@@ -208,7 +205,7 @@ export class MusicPlayer {
       return;
     }
 
-    this._playlist = await this._difmClient.tuneIn(this._channel.network_id, this._channel.id).then(routine => routine.tracks);
+    this._playlist = await this._difmClient.tuneIn(this._channel.id)?.then(routine => routine.tracks) || [];
     this._position = 0;
     return this._playlist;
   }

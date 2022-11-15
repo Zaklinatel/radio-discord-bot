@@ -1,7 +1,7 @@
 import { ImageInfoDefault, TimestampISO } from '../util/types';
 import { VisibilityOption } from './visibility-option.enum';
 
-export interface IRadioAppConfig {
+export interface IAppConfig {
   appVersion: string;
   appDeployTime: TimestampISO;
 

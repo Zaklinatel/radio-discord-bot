@@ -1,6 +1,6 @@
 import { Message, EmbedBuilder } from 'discord.js';
-import { ITrack } from '../radio-api-client';
-import { IChannel } from '../radio-api-client';
+import { ITrack } from '../audio-addict-api-client';
+import { IChannel } from '../audio-addict-api-client';
 import { Logger } from '../logger/logger';
 import { COLOR_INFO, COLOR_SUCCESS, COLOR_WARNING } from '../constants';
 import { httpsURL } from '../helpers';
