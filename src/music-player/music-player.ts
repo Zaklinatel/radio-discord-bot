@@ -205,7 +205,7 @@ export class MusicPlayer {
       return;
     }
 
-    this._playlist = await this._difmClient.tuneIn(this._channel.id).then(routine => routine.tracks);
+    this._playlist = await this._difmClient.tuneIn(this._channel.id)?.then(routine => routine.tracks) || [];
     this._position = 0;
     return this._playlist;
   }

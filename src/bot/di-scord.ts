@@ -145,7 +145,7 @@ export class DiScord {
               if (
                   instance.musicPlayer.isPlaying()
                   && instance.musicPlayer.getChannel()?.id === foundChannelId
-                  && instance.musicPlayer.getChannel()?.network_id === network.networkId
+                  && instance.musicPlayer.getChannel()?.network_id === network.getNetworkId()
               ) {
                 this._notice(
                     message.channel as TextChannel,
@@ -213,10 +213,10 @@ export class DiScord {
         const networks = this._radioManager.getActiveNetworks();
 
         for (const network of networks) {
-          rows = [`\n${network.appConfig.network_name}:\n---------------`];
+          rows = [`\n${network.getConfig().network_name}:\n---------------`];
           const list = network.getChannelList().map((ch, n) => `${n + 1}. ${ch}`);
           rows.push(...list);
-          await message.member?.send(`**${network.appConfig.network_name}:**` + '\n```' + rows.join('\n') + '```');
+          await message.member?.send(`**${network.getConfig().network_name}:**` + '\n```' + rows.join('\n') + '```');
         }
 
         break;

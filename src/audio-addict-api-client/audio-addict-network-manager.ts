@@ -1,10 +1,6 @@
-import fetch, { Response } from 'node-fetch';
-import { IAppConfig } from './app-config.interface';
-import { ACCEPT_HEADER_HTML, AUDIO_ADDICT_FIRST_FETCH_HOST, BANNED_NETWORK_KEYS, DEFAULT_HEADERS } from '../constants';
+import { AUDIO_ADDICT_FIRST_FETCH_HOST, BANNED_NETWORK_KEYS } from '../constants';
 import { Logger } from '../logger/logger';
 import { AudioAddictNetwork } from './audio-addict-network';
-import { IAppConfigWithCsrf } from './app-config-with-csrf.interface';
-
 const logger = new Logger('Audio Addict Network Manager');
 
 export class AudioAddictNetworkManager {
@@ -18,10 +14,11 @@ export class AudioAddictNetworkManager {
 			return;
 		}
 
-		let startAppConfig: IAppConfigWithCsrf;
+		let startNetwork: AudioAddictNetwork;
 
 		try {
-			startAppConfig = await this._fetchAppConfigAndCsrf(AUDIO_ADDICT_FIRST_FETCH_HOST);
+			startNetwork = new AudioAddictNetwork(AUDIO_ADDICT_FIRST_FETCH_HOST);
+			await startNetwork.updateCredentials();
 		} catch (error) {
 			if (error instanceof Error) {
 				const msg = `Can not make first-fetch: ${error.message}`;
@@ -32,24 +29,25 @@ export class AudioAddictNetworkManager {
 			throw error;
 		}
 
-		const startAppId = startAppConfig.appConfig.networks.find(n => n.key === startAppConfig.appConfig.network_key)?.id || 1;
-		this._networksMap.set(
-			startAppId,
-			new AudioAddictNetwork(startAppId, startAppConfig.appConfig, startAppConfig.csrfToken)
-		);
+		this._networksMap.set(startNetwork.getNetworkId(), startNetwork);
 
-		for (const network of startAppConfig.appConfig.networks) {
-			if (!network.active || network.id === startAppId || BANNED_NETWORK_KEYS.includes(network.key)) {
+		for (const networkConfig of startNetwork.getConfig().networks) {
+			if (
+				!networkConfig.active
+				|| networkConfig.id === startNetwork.getNetworkId()
+				|| BANNED_NETWORK_KEYS.includes(networkConfig.key)
+			) {
 				continue;
 			}
 
-			let config: IAppConfigWithCsrf;
+			let network: AudioAddictNetwork;
 
 			try {
-				config = await this._fetchAppConfigAndCsrf(network.url);
+				network = new AudioAddictNetwork(networkConfig.url);
+				await network.updateCredentials();
 			} catch (error) {
 				if (error instanceof Error) {
-					const msg = `Network ${network.key}#${network.id} initializing error: ${error.message}`;
+					const msg = `Network ${networkConfig.key}#${networkConfig.id} initializing error: ${error.message}`;
 					logger.log(msg);
 					throw new Error(msg);
 				}
@@ -57,10 +55,7 @@ export class AudioAddictNetworkManager {
 				throw error;
 			}
 
-			this._networksMap.set(
-				network.id,
-				new AudioAddictNetwork(network.id, config.appConfig, config.csrfToken)
-			);
+			this._networksMap.set(network.getNetworkId(), network);
 		}
 
 		logger.log('Initialized');
@@ -74,71 +69,5 @@ export class AudioAddictNetworkManager {
 
 	getNetwork(networkId: number): AudioAddictNetwork | undefined {
 		return this._networksMap.get(networkId);
-	}
-
-	private async _fetchAppConfigAndCsrf(url: string): Promise<IAppConfigWithCsrf> {
-		const body = await this._request(url);
-
-		const configParseResult = /di\.app\.start\(({.*})\);/.exec(body);
-		if (configParseResult == null) {
-			throw new Error(`Can not find appConfig in response from ${url}`);
-		}
-
-		const csrfParseResult = /<meta[^>]+name\s*=\s*"csrf-token" content="(.*?)"/.exec(body);
-		if (csrfParseResult == null) {
-			throw new Error(`Can not find CSRF-token in response from ${url}`);
-		}
-
-		const csrfToken = csrfParseResult[1];
-		let appConfig: IAppConfig;
-
-		try {
-			appConfig = JSON.parse(
-				configParseResult[1],
-				(k, v) => (v instanceof Object) ? Object.freeze(v) : v
-			) as IAppConfig;
-		} catch (error) {
-			if (error instanceof Error) {
-				throw new Error(`Can not parse appConfig JSON from page ${url}: ${error.message}`);
-			}
-
-			throw error;
-		}
-
-		return { appConfig, csrfToken };
-	}
-
-	private async _request(url: string): Promise<string> {
-		const options = {
-			headers: {
-				...DEFAULT_HEADERS,
-				accept: ACCEPT_HEADER_HTML,
-				referer: url,
-			},
-		};
-
-		logger.log(`Request: GET ${url}`);
-
-		let response: Response;
-
-		try {
-			response = await fetch(url, options);
-		} catch (error) {
-			if (error instanceof Error) {
-				const msg = `Request error: ${error.message}`;
-				logger.log(msg);
-				throw new Error(msg);
-			}
-
-			throw error;
-		}
-
-		if (response.ok) {
-			return response.text();
-		} else {
-			const msg = `Error response ${response.status} ${response.statusText}`;
-			logger.log(msg);
-			throw new Error(msg);
-		}
 	}
 }

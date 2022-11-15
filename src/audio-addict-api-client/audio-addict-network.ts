@@ -1,5 +1,5 @@
-import fetch, { Response } from 'node-fetch';
-import { ACCEPT_HEADER_JSON, DEFAULT_HEADERS } from '../constants';
+import fetch, { HeadersInit, RequestInit, Response } from 'node-fetch';
+import { DEFAULT_HTML_HEADERS, DEFAULT_JSON_HEADERS } from '../constants';
 import { IAppConfig } from './app-config.interface';
 import { IRoutine } from './routine.interface';
 import { IRequestOptions } from './request.options.interface';
@@ -9,11 +9,66 @@ import { IChannel } from './channel.interace';
 const logger = new Logger('DI.FM Client');
 
 export class AudioAddictNetwork {
-  constructor(
-    public readonly networkId: number,
-    public readonly appConfig: IAppConfig,
-    public readonly csrfToken: string
-  ) {}
+  private _appConfig?: IAppConfig;
+  private _csrfToken?: string;
+  private _networkId?: number;
+
+  constructor(public readonly websiteUrl: string) {}
+
+  async updateCredentials(): Promise<IAppConfig> {
+    const body = await this._htmlRequest(this.websiteUrl);
+
+    const configParseResult = /di\.app\.start\(({.*})\);/.exec(body);
+    if (configParseResult == null) {
+      throw new Error(`Can not find appConfig in response from ${this.websiteUrl}`);
+    }
+
+    const csrfParseResult = /<meta[^>]+name\s*=\s*"csrf-token" content="(.*?)"/.exec(body);
+    if (csrfParseResult == null) {
+      throw new Error(`Can not find CSRF-token in response from ${this.websiteUrl}`);
+    }
+
+    this._csrfToken = csrfParseResult[1];
+
+    try {
+      this._appConfig = JSON.parse(
+        configParseResult[1],
+        (k, v) => (v instanceof Object) ? Object.freeze(v) : v
+      ) as IAppConfig;
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new Error(`Can not parse appConfig JSON from page ${this.websiteUrl}: ${error.message}`);
+      }
+
+      throw error;
+    }
+
+    const thisNetwork = this._appConfig.networks.find(n => n.key === this.getConfig().network_key);
+
+    if (!thisNetwork) {
+      throw new Error(`AppConfig does not contain info about self network (config structure was changed?)`);
+    }
+
+    this._networkId = thisNetwork.id;
+
+    return this._appConfig;
+  }
+
+  getNetworkId(): number {
+    if (!this._networkId) {
+      throw new Error('Can not get networkId. Maybe network is not initialized?');
+    }
+
+    return this._networkId;
+  }
+
+  getConfig(): IAppConfig {
+    if (!this._appConfig) {
+      throw new Error('Can not get appConfig. Maybe network is not initialized?');
+    }
+
+    return this._appConfig;
+  }
 
   ping() {
     return this._apiRequest('/ping', { root: true });
@@ -29,8 +84,11 @@ export class AudioAddictNetwork {
     });
   }
 
-  tuneIn(channelId: number): Promise<IRoutine> {
-    return this._apiRequest(`/routines/channel/${channelId}?tune_in=true&audio_token=${this.appConfig.user.audio_token}`);
+  tuneIn(channelId: number): Promise<IRoutine> | undefined {
+    const config = this._appConfig;
+    if (config) {
+      return this._apiRequest(`/routines/channel/${channelId}?tune_in=true&audio_token=${config.user.audio_token}`);
+    }
   }
 
   channel(channelId: number): Promise<IChannel> {
@@ -46,7 +104,7 @@ export class AudioAddictNetwork {
        */
       const num = parseInt(searchString, 10);
       if (num > 0) {
-        channel = this.appConfig.channels[num - 1];
+        channel = this.getConfig().channels[num - 1];
       }
     }
 
@@ -54,14 +112,14 @@ export class AudioAddictNetwork {
       /*
        * Search by full match
        */
-      channel = this.appConfig.channels.find(ch => searchString.toLowerCase() === ch.name.toLowerCase());
+      channel = this.getConfig().channels.find(ch => searchString.toLowerCase() === ch.name.toLowerCase());
     }
 
     if (!channel) {
       /*
        * Search by partial matching
        */
-      channel = this.appConfig.channels.find(ch => new RegExp(searchString, 'gi').test(ch.name));
+      channel = this.getConfig().channels.find(ch => new RegExp(searchString, 'gi').test(ch.name));
     }
 
     if (!channel) {
@@ -74,7 +132,7 @@ export class AudioAddictNetwork {
         .split(' ')
         .filter(word => /^[A-Za-z0-9]+$/gi.test(word));
 
-      channel = this.appConfig.channels
+      channel = this.getConfig().channels
         .map<{ id: number, matches: number }>(ch => ({
           id: ch.id,
           matches: words.reduce((sum, word) => sum + +ch.name.toLowerCase().includes(word), 0),
@@ -93,7 +151,7 @@ export class AudioAddictNetwork {
   }
 
   getChannelList(): string[] {
-    return this.appConfig.channels.map(ch => ch.name);
+    return this.getConfig().channels.map(ch => ch.name);
   }
 
   private async _apiRequest<T extends object>(path, options: Partial<IRequestOptions> = {}): Promise<T> {
@@ -104,15 +162,35 @@ export class AudioAddictNetwork {
       url += '?' + new URLSearchParams(opt.queryParams).toString();
     }
 
-    const urlParser = new URL(url);
-    opt.headers = Object.assign(this._getHeaders(urlParser.origin), opt.headers);
+    opt.headers = {
+      ...DEFAULT_JSON_HEADERS,
+      'referer': this.websiteUrl,
+      'x-csrf-token': this._csrfToken,
+      'x-session-key': this.getConfig().user.session_key,
+    } as HeadersInit;
 
-    logger.log('Request:', opt.method || 'GET', url);
+    return this._request(url, opt).then(r => r.json());
+  }
 
+  private async _htmlRequest(url: string): Promise<string> {
+    const options = {
+      headers: {
+        ...DEFAULT_HTML_HEADERS,
+        'referer': url,
+      },
+    };
+
+    return this._request(url, options).then(r => r.text());
+  }
+
+  private async _request(url: string, options: RequestInit): Promise<Response> {
+    const opt: RequestInit = { method: 'GET', ...options };
     let response: Response;
 
+    logger.log(`Request: ${opt.method} ${url}`);
+
     try {
-      response = await fetch(url, options);
+      response = await fetch(url, opt);
     } catch (error) {
       if (error instanceof Error) {
         const msg = `Request error: ${error.message}`;
@@ -124,7 +202,7 @@ export class AudioAddictNetwork {
     }
 
     if (response.ok) {
-      return response.json();
+      return response;
     } else {
       const msg = `Error response ${response.status} ${response.statusText}`;
       logger.log(msg);
@@ -133,17 +211,6 @@ export class AudioAddictNetwork {
   }
 
   private _getBaseUrl(root: boolean) {
-    return root ? this.appConfig.api.urlRoot : `${this.appConfig.api.urlRoot}/${this.appConfig.network_key}`;
-  }
-
-  private _getHeaders(referer: string) {
-    return {
-      ...DEFAULT_HEADERS,
-      'accept': ACCEPT_HEADER_JSON,
-      'referer': referer,
-      'content-type': 'application/json',
-      'x-csrf-token': this.csrfToken,
-      'x-session-key': this.appConfig.user.session_key,
-    };
+    return root ? this.getConfig().api.urlRoot : `${this.getConfig().api.urlRoot}/${this.getConfig().network_key}`;
   }
 }
