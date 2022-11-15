@@ -21,11 +21,11 @@ import { Logger } from '../logger/logger';
 import { MusicPlayer } from '../music-player';
 import { COLOR_DANGER, COLOR_INFO, COLOR_WARNING, HELP_TEXT } from '../constants';
 import { canInvokeCommand, guildString } from '../helpers';
-import { RadioApiClient } from '../radio-api-client';
 import { NoticeConfig } from './notice-config.interface';
 import { NoticeResult } from './notice-result.interface';
 import { IGuildInstance } from './guild-instance.interface';
 import { MessageController } from '../message-controller';
+import { AudioAddictNetworkManager } from '../audio-addict-api-client/audio-addict-network-manager';
 
 const discordLogger = new Logger('Discord Client');
 
@@ -42,22 +42,14 @@ export class DiScord {
     ],
   });
   private readonly _instances = new Map<Snowflake, IGuildInstance>();
+  private readonly _radioManager = new AudioAddictNetworkManager();
 
   constructor(private readonly _channelName: string) {}
 
   async init(token: string): Promise<void> {
-    try {
-      await this._discordClient.login(token);
-    } catch (e) {
-      console.error(e);
-      throw new Error('Can\'t login to discord');
-    }
+    await this._radioManager.init();
 
-    discordLogger.log('Logged in');
-
-    await this._setStatus();
-
-    this._discordClient.once(Events.ClientReady, () => this._onReady());
+    this._discordClient.on(Events.ClientReady, () => this._onReady());
     this._discordClient.on(Events.GuildCreate, guild => this._onGuildCreate(guild));
     this._discordClient.on(Events.MessageCreate, msg => this._onMessage(msg));
 
@@ -74,15 +66,25 @@ export class DiScord {
         return this._onVoiceStateUpdate(oldState, newState);
       },
     );
+
+    try {
+      await this._discordClient.login(token);
+    } catch (e) {
+      console.error(e);
+      throw new Error('Can\'t login to discord');
+    }
+    discordLogger.log('Logged in');
+
+    await this._setStatus();
   }
 
   private _onReady() {
     discordLogger.log('Ready');
     discordLogger.log('Initializing guilds');
 
-    this._discordClient.guilds.cache.each(guild => {
+    this._discordClient.guilds.cache.each(async guild => {
       getVoiceConnection(guild.id)?.destroy();
-      this._initGuild(guild);
+      await this._initGuild(guild);
     });
   }
 
@@ -133,12 +135,11 @@ export class DiScord {
 
         if (command.length > 1) {
           const search = command.slice(1).join(' ');
-          const networks = instance.musicPlayer.getDiFmClient().getActiveNetworks();
+          const networks = this._radioManager.getActiveNetworks();
           let foundChannelId: number | undefined;
-          let foundNetworkId: number | undefined;
 
           for (const network of networks) {
-            foundChannelId = instance.musicPlayer.getDiFmClient().findChannelId(network.networkId, search);
+            foundChannelId = network.findChannelId(search);
 
             if (foundChannelId) {
               if (
@@ -154,13 +155,12 @@ export class DiScord {
                 break;
               }
 
-              foundNetworkId = network.networkId;
               break;
             }
           }
 
           if (foundChannelId != null) {
-            await instance.musicPlayer.tune(foundNetworkId as number, foundChannelId);
+            await instance.musicPlayer.tune(foundChannelId);
           } else {
             this._notice(
                 message.channel as TextChannel,
@@ -210,11 +210,11 @@ export class DiScord {
       case 'list':
       case 'l':
         let rows: string[] = [];
-        const networks = instance.musicPlayer.getDiFmClient().getActiveNetworks();
+        const networks = this._radioManager.getActiveNetworks();
 
         for (const network of networks) {
           rows = [`\n${network.appConfig.network_name}:\n---------------`];
-          const list = instance.musicPlayer.getDiFmClient().getChannelList(network.networkId).map((ch, n) => `${n + 1}. ${ch}`);
+          const list = network.getChannelList().map((ch, n) => `${n + 1}. ${ch}`);
           rows.push(...list);
           await message.member?.send(`**${network.appConfig.network_name}:**` + '\n```' + rows.join('\n') + '```');
         }
@@ -351,8 +351,7 @@ export class DiScord {
     }
 
     const embedController = new MessageController(message);
-    const difm = new RadioApiClient();
-    const musicPlayer = new MusicPlayer(embedController, difm);
+    const musicPlayer = new MusicPlayer(embedController, this._radioManager.getNetwork(1)!);
     const messageController = new MessageController(message);
     const instance = {
       guild,
@@ -401,7 +400,7 @@ export class DiScord {
   private _setStatus(): ClientPresence | undefined {
     discordLogger.log('Set activity');
     return this._discordClient.user?.setActivity(
-      'DI.FM',
+      'radio',
       {
         type: ActivityType.Listening,
       },

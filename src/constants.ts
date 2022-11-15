@@ -1,6 +1,6 @@
 import { HexColorString } from 'discord.js';
 
-export const DI_FM_HOST = 'https://di.fm';
+export const AUDIO_ADDICT_FIRST_FETCH_HOST = 'https://di.fm';
 
 export const DEFAULT_HEADERS = {
   'accept-language': 'en-US,en;q=0.9,ru;q=0.8,sk;q=0.7,de;q=0.6',
